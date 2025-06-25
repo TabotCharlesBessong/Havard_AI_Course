@@ -1,0 +1,521 @@
+@startuml UseCase_Diagram
+!define RECTANGLE class
+
+title Land Registration System - Use Case Diagram
+
+left to right direction
+
+actor "Land Owner" as LO
+actor "Registry Authority" as RA
+actor "System Admin" as SA
+
+rectangle "Land Registration System" {
+  usecase "Register Account" as UC1
+  usecase "Login" as UC2
+  usecase "Submit Land Title Request" as UC3
+  usecase "Fill Land Information" as UC4
+  usecase "Upload Documents" as UC5
+  usecase "Track Request Status" as UC6
+  usecase "View Land Title" as UC7
+  usecase "Download Land Title" as UC8
+  
+  usecase "Verify Land Title Request" as UC9
+  usecase "Review Land Information" as UC10
+  usecase "Approve Request" as UC11
+  usecase "Reject Request" as UC12
+  usecase "Issue Land Title" as UC13
+  usecase "Manage Land Records" as UC14
+  
+  usecase "Manage System Users" as UC15
+  usecase "Create Registry Account" as UC16
+  usecase "Manage Registry Accounts" as UC17
+  usecase "View System Reports" as UC18
+  usecase "Configure System Settings" as UC19
+}
+
+LO --> UC1
+LO --> UC2
+LO --> UC3
+LO --> UC6
+LO --> UC7
+LO --> UC8
+
+UC3 ..> UC4 : <<include>>
+UC3 ..> UC5 : <<include>>
+
+RA --> UC2
+RA --> UC9
+RA --> UC11
+RA --> UC12
+RA --> UC13
+RA --> UC14
+
+UC9 ..> UC10 : <<include>>
+
+SA --> UC2
+SA --> UC15
+SA --> UC16
+SA --> UC17
+SA --> UC18
+SA --> UC19
+
+@enduml
+
+@startuml Class_Diagram
+title Land Registration System - Class Diagram
+
+class User {
+  - userId: String
+  - username: String
+  - password: String
+  - email: String
+  - phoneNumber: String
+  - firstName: String
+  - lastName: String
+  - dateCreated: Date
+  - isActive: Boolean
+  + login(): Boolean
+  + logout(): void
+  + updateProfile(): void
+}
+
+class LandOwner {
+  - nationalId: String
+  - address: String
+  - occupation: String
+  + submitLandRequest(): LandTitleRequest
+  + trackRequestStatus(): RequestStatus
+  + downloadLandTitle(): LandTitle
+}
+
+class RegistryAuthority {
+  - registryId: String
+  - organizationName: String
+  - licenseNumber: String
+  - jurisdiction: String
+  + verifyLandRequest(): Boolean
+  + approveRequest(): void
+  + rejectRequest(): void
+  + issueLandTitle(): LandTitle
+}
+
+class SystemAdmin {
+  - adminLevel: String
+  + createRegistryAccount(): RegistryAuthority
+  + manageUsers(): void
+  + generateReports(): Report
+  + configureSystem(): void
+}
+
+class LandTitleRequest {
+  - requestId: String
+  - landOwnerId: String
+  - requestDate: Date
+  - status: RequestStatus
+  - landInformation: LandInformation
+  - documents: List<Document>
+  - verificationNotes: String
+  + submitRequest(): void
+  + updateStatus(): void
+  + addVerificationNotes(): void
+}
+
+enum RequestStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+class LandInformation {
+  - landId: String
+  - plotNumber: String
+  - landSize: Double
+  - location: String
+  - coordinates: String
+  - landUse: String
+  - previousOwner: String
+  - acquisitionMethod: String
+  + validateInformation(): Boolean
+}
+
+class Document {
+  - documentId: String
+  - fileName: String
+  - fileType: String
+  - fileSize: Long
+  - uploadDate: Date
+  - filePath: String
+  + uploadDocument(): void
+  + validateDocument(): Boolean
+}
+
+class LandTitle {
+  - titleId: String
+  - titleNumber: String
+  - issueDate: Date
+  - expiryDate: Date
+  - digitalSignature: String
+  - qrCode: String
+  + generateTitle(): void
+  + validateTitle(): Boolean
+}
+
+class Report {
+  - reportId: String
+  - reportType: String
+  - generatedDate: Date
+  - data: String
+  + generateReport(): void
+  + exportReport(): void
+}
+
+User <|-- LandOwner
+User <|-- RegistryAuthority
+User <|-- SystemAdmin
+
+LandOwner ||--o{ LandTitleRequest : submits
+RegistryAuthority ||--o{ LandTitleRequest : verifies
+LandTitleRequest ||--|| LandInformation : contains
+LandTitleRequest ||--o{ Document : includes
+LandTitleRequest ||--o| LandTitle : generates
+LandTitleRequest ||--|| RequestStatus : has
+
+@enduml
+
+@startuml Activity_Diagram
+title Land Registration System - Activity Diagram
+
+start
+
+:Land Owner logs into system;
+
+:Land Owner fills land information form;
+
+:Land Owner uploads required documents;
+
+:Submit land title request;
+
+:System validates submitted information;
+
+if (Information valid?) then (yes)
+  :Request saved with PENDING status;
+  :Send notification to Registry Authority;
+  
+  :Registry Authority reviews request;
+  
+  if (Documents complete?) then (yes)
+    :Registry Authority verifies land information;
+    
+    if (Land information valid?) then (yes)
+      :Registry Authority approves request;
+      :Generate land title;
+      :Update request status to COMPLETED;
+      :Send approval notification to Land Owner;
+      :Land Owner can download title;
+    else (no)
+      :Registry Authority rejects request;
+      :Update request status to REJECTED;
+      :Send rejection notification with reasons;
+    endif
+    
+  else (no)
+    :Registry Authority requests additional documents;
+    :Send notification to Land Owner;
+    :Land Owner uploads missing documents;
+  endif
+  
+else (no)
+  :Display validation errors;
+  :Land Owner corrects information;
+endif
+
+stop
+
+@enduml
+
+@startuml ER_Diagram
+title Land Registration System - Entity Relationship Diagram
+
+entity "User" {
+  * user_id : VARCHAR(50) <<PK>>
+  --
+  * username : VARCHAR(100)
+  * password : VARCHAR(255)
+  * email : VARCHAR(100)
+  * phone_number : VARCHAR(20)
+  * first_name : VARCHAR(50)
+  * last_name : VARCHAR(50)
+  * user_type : ENUM('LAND_OWNER', 'REGISTRY_AUTHORITY', 'SYSTEM_ADMIN')
+  * date_created : TIMESTAMP
+  * is_active : BOOLEAN
+}
+
+entity "LandOwner" {
+  * land_owner_id : VARCHAR(50) <<PK>>
+  --
+  * user_id : VARCHAR(50) <<FK>>
+  * national_id : VARCHAR(50)
+  * address : TEXT
+  * occupation : VARCHAR(100)
+}
+
+entity "RegistryAuthority" {
+  * registry_id : VARCHAR(50) <<PK>>
+  --
+  * user_id : VARCHAR(50) <<FK>>
+  * organization_name : VARCHAR(200)
+  * license_number : VARCHAR(100)
+  * jurisdiction : VARCHAR(100)
+}
+
+entity "SystemAdmin" {
+  * admin_id : VARCHAR(50) <<PK>>
+  --
+  * user_id : VARCHAR(50) <<FK>>
+  * admin_level : VARCHAR(50)
+}
+
+entity "LandTitleRequest" {
+  * request_id : VARCHAR(50) <<PK>>
+  --
+  * land_owner_id : VARCHAR(50) <<FK>>
+  * registry_id : VARCHAR(50) <<FK>>
+  * request_date : TIMESTAMP
+  * status : ENUM('PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'COMPLETED')
+  * verification_notes : TEXT
+  * completion_date : TIMESTAMP
+}
+
+entity "LandInformation" {
+  * land_id : VARCHAR(50) <<PK>>
+  --
+  * request_id : VARCHAR(50) <<FK>>
+  * plot_number : VARCHAR(100)
+  * land_size : DECIMAL(10,2)
+  * location : TEXT
+  * coordinates : TEXT
+  * land_use : VARCHAR(100)
+  * previous_owner : VARCHAR(200)
+  * acquisition_method : VARCHAR(100)
+}
+
+entity "Document" {
+  * document_id : VARCHAR(50) <<PK>>
+  --
+  * request_id : VARCHAR(50) <<FK>>
+  * file_name : VARCHAR(255)
+  * file_type : VARCHAR(50)
+  * file_size : BIGINT
+  * upload_date : TIMESTAMP
+  * file_path : TEXT
+}
+
+entity "LandTitle" {
+  * title_id : VARCHAR(50) <<PK>>
+  --
+  * request_id : VARCHAR(50) <<FK>>
+  * title_number : VARCHAR(100)
+  * issue_date : TIMESTAMP
+  * expiry_date : TIMESTAMP
+  * digital_signature : TEXT
+  * qr_code : TEXT
+}
+
+entity "Report" {
+  * report_id : VARCHAR(50) <<PK>>
+  --
+  * admin_id : VARCHAR(50) <<FK>>
+  * report_type : VARCHAR(100)
+  * generated_date : TIMESTAMP
+  * data : TEXT
+}
+
+User ||--o{ LandOwner : "is a"
+User ||--o{ RegistryAuthority : "is a"
+User ||--o{ SystemAdmin : "is a"
+
+LandOwner ||--o{ LandTitleRequest : "submits"
+RegistryAuthority ||--o{ LandTitleRequest : "verifies"
+LandTitleRequest ||--|| LandInformation : "contains"
+LandTitleRequest ||--o{ Document : "includes"
+LandTitleRequest ||--o| LandTitle : "generates"
+SystemAdmin ||--o{ Report : "generates"
+
+@enduml
+
+@startuml Sequence_Diagram
+title Land Registration System - Sequence Diagram
+
+actor "Land Owner" as LO
+participant "Web Application" as WA
+participant "Authentication Service" as AS
+participant "Land Registration Service" as LRS
+participant "Document Service" as DS
+participant "Notification Service" as NS
+participant "Database" as DB
+actor "Registry Authority" as RA
+
+== Land Title Request Submission ==
+
+LO -> WA: Login request
+WA -> AS: Authenticate user
+AS -> DB: Validate credentials
+DB -> AS: User authenticated
+AS -> WA: Login successful
+WA -> LO: Dashboard displayed
+
+LO -> WA: Fill land information form
+LO -> WA: Upload documents
+WA -> DS: Store documents
+DS -> DB: Save document metadata
+DB -> DS: Documents stored
+DS -> WA: Upload successful
+
+LO -> WA: Submit land title request
+WA -> LRS: Create land title request
+LRS -> DB: Save request data
+DB -> LRS: Request saved
+LRS -> NS: Send notification to Registry Authority
+NS -> RA: Email/SMS notification
+LRS -> WA: Request submitted successfully
+WA -> LO: Confirmation message
+
+== Request Verification ==
+
+RA -> WA: Login to system
+WA -> AS: Authenticate registry authority
+AS -> WA: Authentication successful
+
+RA -> WA: View pending requests
+WA -> LRS: Get pending requests
+LRS -> DB: Query pending requests
+DB -> LRS: Return requests list
+LRS -> WA: Requests data
+WA -> RA: Display pending requests
+
+RA -> WA: Select request for review
+WA -> LRS: Get request details
+LRS -> DB: Query request data
+DB -> LRS: Return request details
+LRS -> WA: Request details
+WA -> RA: Display request details
+
+RA -> WA: Verify and approve request
+WA -> LRS: Update request status
+LRS -> DB: Update request status to APPROVED
+DB -> LRS: Status updated
+LRS -> LRS: Generate land title
+LRS -> DB: Save land title
+DB -> LRS: Title saved
+LRS -> NS: Send approval notification
+NS -> LO: Approval notification
+LRS -> WA: Request processed
+WA -> RA: Success confirmation
+
+@enduml
+
+@startuml Deployment_Diagram
+title Land Registration System - Deployment Diagram
+
+node "Client Devices" {
+  artifact "Web Browser" as WB
+  artifact "Mobile App" as MA
+}
+
+node "Load Balancer" {
+  artifact "Nginx" as LB
+}
+
+node "Web Server Cluster" {
+  node "Web Server 1" {
+    artifact "React Frontend" as RF1
+    artifact "Node.js API" as API1
+  }
+  
+  node "Web Server 2" {
+    artifact "React Frontend" as RF2
+    artifact "Node.js API" as API2
+  }
+}
+
+node "Application Server Cluster" {
+  node "App Server 1" {
+    artifact "Authentication Service" as AUTH1
+    artifact "Land Registration Service" as LRS1
+    artifact "Document Service" as DS1
+    artifact "Notification Service" as NS1
+  }
+  
+  node "App Server 2" {
+    artifact "Authentication Service" as AUTH2
+    artifact "Land Registration Service" as LRS2
+    artifact "Document Service" as DS2
+    artifact "Notification Service" as NS2
+  }
+}
+
+node "Database Cluster" {
+  database "PostgreSQL Primary" as DB1
+  database "PostgreSQL Replica" as DB2
+}
+
+node "File Storage" {
+  artifact "Document Storage" as FS
+}
+
+node "External Services" {
+  artifact "Email Service" as ES
+  artifact "SMS Gateway" as SMS
+  artifact "Digital Signature Service" as DSS
+}
+
+node "Monitoring & Logging" {
+  artifact "Application Monitoring" as AM
+  artifact "Log Aggregation" as LA
+}
+
+WB --> LB : HTTPS
+MA --> LB : HTTPS
+
+LB --> RF1 : HTTP
+LB --> RF2 : HTTP
+
+RF1 --> API1 : REST API
+RF2 --> API2 : REST API
+
+API1 --> AUTH1 : Service Call
+API1 --> LRS1 : Service Call
+API1 --> DS1 : Service Call
+API1 --> NS1 : Service Call
+
+API2 --> AUTH2 : Service Call
+API2 --> LRS2 : Service Call
+API2 --> DS2 : Service Call
+API2 --> NS2 : Service Call
+
+AUTH1 --> DB1 : SQL
+AUTH2 --> DB1 : SQL
+LRS1 --> DB1 : SQL
+LRS2 --> DB1 : SQL
+
+DB1 --> DB2 : Replication
+
+DS1 --> FS : File Operations
+DS2 --> FS : File Operations
+
+NS1 --> ES : Email API
+NS1 --> SMS : SMS API
+NS2 --> ES : Email API
+NS2 --> SMS : SMS API
+
+LRS1 --> DSS : Digital Signature API
+LRS2 --> DSS : Digital Signature API
+
+API1 --> AM : Metrics
+API2 --> AM : Metrics
+API1 --> LA : Logs
+API2 --> LA : Logs
+
+@enduml
